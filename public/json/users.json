@@ -1,0 +1,6 @@
+[
+    {
+      "id": 1,
+      "query": "INSERT INTO users VALUES (1, 'System admin', 'Admin', 'admin1234')"
+    }
+]
