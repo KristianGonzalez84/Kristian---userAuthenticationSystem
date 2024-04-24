@@ -41,11 +41,6 @@ router.get('/login', function(req, res) {
   res.render('login');
 });
 
-router.post('/logout', function(req, res) {
-  req.logout(); // Remove user from session
-  res.redirect('/');
-});
-
 router.post('/login', passport.authenticate('local', {
   successRedirect: '/access',
   failureRedirect: '/login',

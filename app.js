@@ -19,6 +19,13 @@ app.use(session({
   saveUninitialized: false,
 }));
 
+// Add session logging middleware
+app.use((req, res, next) => {
+  console.log('Session ID:', req.sessionID);
+  console.log('Session Data:', req.session);
+  next();
+});
+
 app.use(passport.initialize());
 app.use(passport.session());
 
