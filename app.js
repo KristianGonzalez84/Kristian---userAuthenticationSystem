@@ -7,9 +7,16 @@ var logger = require('morgan');
 const session = require('express-session');
 const passport = require('passport');
 
-const { populateUsersFromJSON } = require('./services/userServices');
-
 var db = require('./models');
+// Synchronize the database and log the result
+console.log('Synchronizing database...');
+db.sequelize.sync({ force: false })
+  .then(() => {
+    console.log('Database synchronized successfully');
+  })
+  .catch(err => {
+    console.error('Error synchronizing database:', err);
+  });
 
 var app = express();
 
@@ -29,9 +36,11 @@ app.use((req, res, next) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
-var indexRouter = require('./routes/index');
+// Import routers
+const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const userRouter = require('./routes/users');
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -43,12 +52,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Mount routers
 app.use('/', indexRouter);
-app.use('/login', authRouter);
-app.use('/signup', authRouter);
+app.use('/auth', authRouter);
+app.use('/', authRouter);
 app.use('/users', userRouter);
-
-populateUsersFromJSON()
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

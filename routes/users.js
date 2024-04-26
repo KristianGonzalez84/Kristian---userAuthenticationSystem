@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { User } = require('../models');
-
-// CRUD implementation //
+const db = require('../models');
+const passport = require('passport');
+const UserService = require('../services/UserService');
+const userService = new UserService(db);
 
 // GET all users
 router.get('/', async (req, res, next) => {
     try {
-        const users = await User.findAll();
+        const users = await userService.getAll();
         res.json(users);
     } catch (error) {
         console.error(error);
@@ -16,10 +17,10 @@ router.get('/', async (req, res, next) => {
 });
 
 // GET user by ID
-router.get('/:id', async (req, res, next) => {
-    const userId = req.params.id;
+router.get('/:userId', async (req, res, next) => {
+    const userId = req.params.userId;
     try {
-        const user = await User.findByPk(userId);
+        const user = await userService.getOne(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -34,7 +35,16 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
     const userData = req.body;
     try {
-        const newUser = await User.create(userData);
+        // Extract username, fullName, password from request body
+        const { username, fullName, password } = userData;
+
+        // Generate salt and hashed password
+        const salt = crypto.randomBytes(16);
+        const hashedPassword = await hashPassword(password, salt);
+
+        // Call the UserService to create a new user
+        const newUser = await userService.create(username, fullName, salt, hashedPassword);
+
         res.status(201).json(newUser);
     } catch (error) {
         console.error(error);
@@ -43,15 +53,15 @@ router.post('/', async (req, res, next) => {
 });
 
 // Update user by ID
-router.put('/:id', async (req, res, next) => {
-    const userId = req.params.id;
+router.put('/:userId', async (req, res, next) => {
+    const userId = req.params.userId;
     const updatedUserData = req.body;
     try {
-        const user = await User.findByPk(userId);
+        const user = await userService.getOne(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        await user.update(updatedUserData);
+        await userService.update(userId, updatedUserData);
         res.json(user);
     } catch (error) {
         console.error(error);
@@ -59,16 +69,15 @@ router.put('/:id', async (req, res, next) => {
     }
 });
 
-// Delete user by ID (soft delete)
-router.delete('/:id', async (req, res, next) => {
-    const userId = req.params.id;
+// Delete user by ID
+router.delete('/:userId', async (req, res, next) => {
+    const userId = req.params.userId;
     try {
-        const user = await User.findByPk(userId);
+        const user = await userService.getOne(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        // Soft delete by setting deletedAt field
-        await user.update({ deletedAt: new Date() });
+        await userService.deleteUser(userId);
         res.status(204).end();
     } catch (error) {
         console.error(error);

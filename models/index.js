@@ -31,14 +31,4 @@ fs.readdirSync(__dirname)
     db[model.name] = model;
   });
 
-// Synchronize the database and log the result
-console.log('Synchronizing database...');
-db.sequelize.sync({ force: false })
-  .then(() => {
-    console.log('Database synchronized successfully');
-  })
-  .catch(err => {
-    console.error('Error synchronizing database:', err);
-  });
-
-module.exports = db;
+module.exports = db
