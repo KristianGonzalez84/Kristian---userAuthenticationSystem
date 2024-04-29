@@ -16,7 +16,8 @@
                 <div class="card">
                     <div class="card-body">
                         <h1 class="text-center">Hey! You made it!</h1>
-                        <h4><p class="text-center">You are now an authenticated user, congratulations!</p></h4>
+                                    <!-- Display username dynamically -->
+                        <h4><p class="text-center">You are now an authenticated user, congratulations <span style="color: #ffbb00;"><%= username %></span>!</p></h4>
                     </div>
                 </div>
             </div>
@@ -24,11 +25,6 @@
     </div>
     <div class="text-center mt-3 button-container">
         <button type="button" class="button-green" onclick="logout()">Logout</button>
-    </div>
-    <br>
-    <p>or</p>
-    <div class="text-center mt-3 button-container">
-        <button type="button" class="button-red" onclick="deleteUser()">Delete user</button>
     </div>
 
     <footer class="info">
