@@ -1,45 +1,63 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const LocalStrategy = require('passport-local');
-const crypto = require('crypto');
-const db = require("../models");
+const LocalStrategy = require('passport-local').Strategy;
 const UserService = require("../services/UserService");
-const userService = new UserService(db);
+const db = require('../models');
+const userService = new UserService(db); // Assuming db is already defined
+const crypto = require('crypto');
 
 // Passport initialization
-passport.use(new LocalStrategy(function verify(username, password, cb) {
+passport.use(new LocalStrategy({
+  usernameField: 'username',
+  passwordField: 'password',
+}, function(username, password, cb) {
+  console.log('Received username:', username);
+  console.log('Received password:', password);
+  
   userService.getOneByUsername(username)
     .then((user) => {
+      console.log('Found user:', user.username);
       if (!user) {
+        console.log('User not found');
         return cb(null, false, { message: 'Incorrect username or password.' });
       }
-      crypto.pbkdf2(password, user.Salt, 310000, 32, 'sha256', function(err, hashedPassword) {
-        if (err) { return cb(err); }
-        if (!crypto.timingSafeEqual(user.EncryptedPassword, hashedPassword)) {
-          return cb(null, false, { message: 'Incorrect username or password.' });
-        }
-        return cb(null, user);
-      });
-    })
-    .catch((err) => cb(err));
-}));
-
-passport.serializeUser(function(user, cb) {
-  cb(null, user.userId);
-});
-
-passport.deserializeUser(function(userId, cb) {
-  userService.getOneById(userId)
-    .then(user => {
-      if (!user) {
-        return cb(new Error('User not found'));
+      
+      // Hash the password provided during login
+      const hashedPassword = userService.hashPassword(password, user.Salt).toString('hex');
+      console.log('Hashed password:', hashedPassword);
+      console.log('Stored password:', user.EncryptedPassword.toString('hex'));
+      
+      // Compare hashed passwords
+      if (hashedPassword !== user.EncryptedPassword.toString('hex')) {
+        console.log('Incorrect password');
+        return cb(null, false, { message: 'Incorrect username or password.' });
       }
-      cb(null, user);
+      
+      console.log('Login successful');
+      return cb(null, user);
     })
-    .catch(err => {
+    .catch((err) => {
+      console.error('Error:', err);
       cb(err);
     });
+}));
+
+// Serialize and deserialize user
+passport.serializeUser((user, done) => {
+  done(null, user.userId);
+});
+
+passport.deserializeUser(async (userId, done) => {
+  try {
+    const user = await userService.getOneById(userId);
+    if (!user) {
+      return done(new Error('User not found'));
+    }
+    done(null, user);
+  } catch (error) {
+    done(error);
+  }
 });
 
 // Login route
@@ -58,20 +76,17 @@ router.post('/logout', function(req, res, next) {
 });
 
 // Signup route
-router.post('/signup', function(req, res, next) {
-  console.log('Received signup request:', req.body); // Log the form data received
-  const salt = crypto.randomBytes(16);
-  crypto.pbkdf2(req.body.password, salt, 310000, 32, 'sha256', function(err, hashedPassword) {
-    if (err) { return next(err); }
-    userService.create(req.body.username, req.body.firstname, req.body.lastname, salt, hashedPassword)
-      .then(() => {
-        res.redirect('/');
-      })
-      .catch((err) => {
-        console.error(err);
-        res.status(500).send('Internal Server Error');
-      });
-  });
+router.post('/signup', async (req, res) => {
+  try {
+    const { username, firstname, lastname, password } = req.body;
+    const salt = crypto.randomBytes(16).toString('hex');
+    const encryptedPassword = userService.hashPassword(password, salt);
+    await userService.create(username, firstname, lastname, encryptedPassword, salt);
+    res.redirect('/');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 module.exports = router;

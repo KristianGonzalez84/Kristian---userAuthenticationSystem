@@ -9,7 +9,9 @@ function logout() {
             body: JSON.stringify({})
         })
         .then(response => {
+            console.log('Logout response:', response);
             if (response.redirected) {
+                console.log('Redirecting to:', response.url);
                 window.location.href = response.url; // Redirect to the URL provided by the server
             }
         })
