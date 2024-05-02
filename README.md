@@ -9,6 +9,8 @@
 to start use in terminal: 'npm start' - in browser the main page is 'http://localhost:3000/'.
 - feel free to sign up a new 'User' for login, after test if deletion of user is required, use the program 'Postman'.
   the setup is 'DELETE' and 'http://localhost:3000/users/*', ( if user 1 or 2 or so wants to deleted set the right 'id' where the star is /*)
+
+  CRUD is implemented!
   ---- 
 - This application is implemented and secured with passportJS and it uses sessions!
 
